@@ -67,7 +67,7 @@ struct AllShifts{
         AllShifts ( bitread b){
 		int max_shift = b.len - min_overlap_len;  
 		shifts[0] = b;
-                for (size_t i=1; i<max_shift; i++){
+                for (size_t i = 1; i <= max_shift; i++){
                         shifts[i] = b >> i;
 			shifts[-i] = b << i;
 		}       
@@ -83,7 +83,7 @@ int main ()
 	
 	seqan::SeqFileIn seqFileIn_reads("merged_reads.fastq");
 	
-	vector<vector<std::pair<int, int>>> graph; // 
+	vector< vector < int > > graph; // 
 
 	vector<CharString> read_ids;
 	vector<Dna5String> reads;
@@ -113,19 +113,19 @@ int main ()
 	std::cout << num_of_reads << std::endl;
 	for (size_t i = 0; i < num_of_reads/*bits.size()*/; i++){
 		AllShifts as (bits[i]);
-		int t1 =  (as.shifts.size()-1)/2;
-                int t2 = - t1; // без этого не работает???
-                
-		for (size_t j = 0; j < num_of_reads/*bits.size()*/; j++){
-			for (int k = t2; k <= t1; k++){
-				if (bits[j].dist_mask (as.shifts[k]) <= tau){
+		//int t1 =  (as.shifts.size()-1)/2;
+                //int t2 = - t1; // без этого не работает???
+                std::cout << i << ' ' << as.shifts.size() << ' ' <<  std::endl;
+		//for (size_t j = 0; j < num_of_reads/*bits.size()*/; j++){
+			//for (int k = t2; k <= t1; k++){
+				//if (bits[j].dist_mask (as.shifts[k]) <= tau){
 					//in graph: 
-					//graph[j].push_back(std::make_pair(i,k));
+					//graph[j].push_back(i);
 					//std::cout << j << ' ' << i << ' ' << k << std::endl;
 					//break;
-				}
-			}
-		}
+				//}
+			//}
+		//}
 		as.shifts.clear();	
 	}
 	std::cout << "-----------------"  << std::endl;	
