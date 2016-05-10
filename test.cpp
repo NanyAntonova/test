@@ -66,11 +66,14 @@ struct AllShifts{
         static const size_t min_overlap_len = 300;
         AllShifts ( bitread b){
 		int max_shift = b.len - min_overlap_len;  
+		std::cout << max_shift << std::endl;
 		shifts[0] = b;
-                for (size_t i = 1; i <= max_shift; i++){
-                        shifts[i] = b >> i;
-			shifts[-i] = b << i;
-		}       
+                if (max_shift > 0){
+			for (size_t i = 1; i <= max_shift; i++){
+                        	shifts[i] = b >> i;
+				shifts[-i] = b << i;
+			} 
+		}      
         }
 };
 
@@ -100,33 +103,32 @@ int main ()
 	for (const auto &_ : reads) {
 		bits.push_back(bitread(_));
 	}
-	
-	/*AllShifts as (bits[0]); просмотр сдвигов
+
+	/*AllShifts as (bits[0]); //просмотр сдвигов
 	int t1 =  (as.shifts.size()-1)/2;
 	int t2 = - t1;
 	std::cout << as.shifts.size() << ' ' << t1 << ' ' << t2 << std::endl;	
 	for (int k = t2; k <= t1; k++){
 		std::cout << k << ' ' << as.shifts[k].len << ' ' << as.shifts[k].evenbit << std::endl ;
-	}*/
-
-	int num_of_reads = bits.size();
-	std::cout << num_of_reads << std::endl;
-	for (size_t i = 0; i < num_of_reads/*bits.size()*/; i++){
-		AllShifts as (bits[i]);
-		//int t1 =  (as.shifts.size()-1)/2;
-                //int t2 = - t1; // без этого не работает???
-                std::cout << i << ' ' << as.shifts.size() << ' ' <<  std::endl;
-		//for (size_t j = 0; j < num_of_reads/*bits.size()*/; j++){
-			//for (int k = t2; k <= t1; k++){
-				//if (bits[j].dist_mask (as.shifts[k]) <= tau){
-					//in graph: 
-					//graph[j].push_back(i);
-					//std::cout << j << ' ' << i << ' ' << k << std::endl;
-					//break;
-				//}
-			//}
-		//}
-		as.shifts.clear();	
 	}
-	std::cout << "-----------------"  << std::endl;	
+	*/
+	
+	int num_of_reads = bits.size();
+	graph.resize ( num_of_reads );
+	std::cout << num_of_reads << std::endl;
+	for (size_t i = 0; i < num_of_reads; i++){
+		AllShifts as (bits[i]);
+		//std::cout << i << ' ' << as.shifts.size() << ' ' <<  std::endl;
+		for (size_t j = 0; j < num_of_reads; j++){
+			for (auto k = static_cast <int> (- ( as.shifts.size() - 1 ) / 2 ); k <= static_cast <int> ( ( as.shifts.size() - 1 ) / 2 ); k++){
+				if (bits[j].dist_mask (as.shifts[k]) <= tau){
+					//in graph: 
+					graph[j].push_back(i);
+					std::cout << j << ' ' << i << ' ' << k << std::endl;
+					break;
+				}
+			}
+		}
+		as.shifts.clear();	
+	}	
 } 
