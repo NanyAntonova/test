@@ -5,7 +5,9 @@
 #include <string>
 #include <seqan/seq_io.h>
 
+
 struct bitread{
+	
 	static const size_t maxlen = 640;
 	static const std::bitset<maxlen> * init_masks () {
 		static std::bitset<maxlen> mask[maxlen];
@@ -62,11 +64,11 @@ struct bitread{
 };
 
 struct AllShifts{
-        std::unordered_map<int, bitread > shifts;
+	std::unordered_map<int, bitread > shifts; 
         static const size_t min_overlap_len = 300;
         AllShifts ( bitread b){
 		int max_shift = b.len - min_overlap_len;  
-		std::cout << max_shift << std::endl;
+		//std::cout << max_shift << std::endl;
 		shifts[0] = b;
                 if (max_shift > 0){
 			for (size_t i = 1; i <= max_shift; i++){
@@ -80,6 +82,23 @@ struct AllShifts{
 using std::vector;
 using seqan::Dna5String;
 using seqan::CharString;
+
+std::unordered_map <int, std::bitset <640> > all_masks; // add const
+
+int init_all_masks (){
+	all_masks[0].set();
+	for (size_t j = 1; j <= 640*2; j++){
+		all_masks[-j] = all_masks[1-j] << 1;
+		all_masks[j] = all_masks[j-1] >> 1; 
+	}
+}
+
+int distance (bitread s, bitread p, int i, int j, int len){
+	AllShifts sh_s (s);
+	// гарантируется существование sh_s.shifts[i-j] ??	
+	std::bitset<p.maxlen> res = ((sh_s.shifts[i-j].evenbit ^ p.evenbit) | (sh_s.shifts[i-j].oddbit ^ p.oddbit)) & all_masks[i] & all_masks[i+len-p.maxlen]; 
+	return res.count();
+} 
 
 int main ()
 {
@@ -113,12 +132,11 @@ int main ()
 	}
 	*/
 	
-	int num_of_reads = bits.size();
+	/*int num_of_reads = bits.size(); // построение графа
 	graph.resize ( num_of_reads );
 	std::cout << num_of_reads << std::endl;
 	for (size_t i = 0; i < num_of_reads; i++){
 		AllShifts as (bits[i]);
-		//std::cout << i << ' ' << as.shifts.size() << ' ' <<  std::endl;
 		for (size_t j = 0; j < num_of_reads; j++){
 			for (auto k = static_cast <int> (- ( as.shifts.size() - 1 ) / 2 ); k <= static_cast <int> ( ( as.shifts.size() - 1 ) / 2 ); k++){
 				if (bits[j].dist_mask (as.shifts[k]) <= tau){
@@ -130,5 +148,9 @@ int main ()
 			}
 		}
 		as.shifts.clear();	
-	}	
+	}*/	
+	
+	init_all_masks();
+
+	std::cout << distance (bits[0], bits[1], 1, 1, 6) << ' ' << bits[0].dist_mask(bits[1]) << std::endl ;
 } 
