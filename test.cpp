@@ -4,8 +4,9 @@
 #include <unordered_map>
 #include <string>
 #include <seqan/seq_io.h>
+#include <assert.h>
 
-struct bitread{
+struct bitread {
 
 	static const size_t maxlen = 640;
 	static const std::bitset<maxlen> * init_masks_right () {
@@ -76,7 +77,7 @@ struct bitread{
 
 };
 
-struct AllShifts{
+struct AllShifts {
 	std::unordered_map < int, bitread > shifts; 
         static const size_t min_overlap_len = 300;
         AllShifts ( bitread b ){
@@ -89,9 +90,9 @@ struct AllShifts{
 			} 
 		}      
         }
-	int distance ( bitread &p, int i, int j, int len ){
-        	assert ( ( shifts.find[i-j] = unsorted_map::endl ) || ( len < 0 ) );      
-        	std::bitset<p.maxlen> res = ((shifts[i-j].evenbit ^ p.evenbit) | (shifts[i-j].oddbit ^ p.oddbit)) & p.right_masks(i) & p.left_masks(p.maxlen-i-len);
+	int distance ( const bitread &p, int i, int j, int len ){
+        	assert ( ( shifts.find(i-j) ) && ( len > 0 ) );      
+        	std::bitset <p.maxlen> res = ((shifts[i-j].evenbit ^ p.evenbit) | (shifts[i-j].oddbit ^ p.oddbit)) & p.right_masks(i) & p.left_masks(p.maxlen-i-len);
         	return res.count();
 	}
 
@@ -166,7 +167,6 @@ int main ()
 	*/
 
 	AllShifts asb (bits[0]);
-	int q = 1;
-	int qq = 6;
-	std::cout << asb.distance (bits[1], q, q, qq) << ' ' << bits[0].dist_mask(bits[1]) << std::endl ;
+	std::cout << asb.distance (bits[1], 1, 1, -6) << ' ' << bits[0].dist_mask(bits[1]) << std::endl ;
+
 } 
