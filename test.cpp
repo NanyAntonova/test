@@ -64,7 +64,7 @@ struct bitread{
 };
 
 struct AllShifts{
-	std::unordered_map<int, bitread > shifts; 
+	std::unordered_map < int, bitread > shifts; 
         static const size_t min_overlap_len = 300;
         AllShifts ( bitread b){
 		int max_shift = b.len - min_overlap_len;  
@@ -83,30 +83,45 @@ using std::vector;
 using seqan::Dna5String;
 using seqan::CharString;
 
-std::unordered_map <int, std::bitset <640> > all_masks; // add const
+const int max_len_mask = 640;
+std::bitset<max_len_mask> left_masks [max_len_mask + 1];
+std::bitset<max_len_mask> right_masks [max_len_mask + 1];
 
 int init_all_masks (){
-	all_masks[0].set();
-	for (size_t j = 1; j <= 640*2; j++){
-		all_masks[-j] = all_masks[1-j] << 1;
-		all_masks[j] = all_masks[j-1] >> 1; 
+	left_masks [0].set();
+	right_masks [0].set();
+	for (size_t j = 1; j <= max_len_mask; j++){
+		left_masks [j] = left_masks [j-1] << 1;
+		right_masks [j] = right_masks [j-1] >> 1; 
 	}
 }
 
-int distance (bitread s, bitread p, int i, int j, int len){
-	AllShifts sh_s (s);
-	// гарантируется существование sh_s.shifts[i-j] ??	
-	std::bitset<p.maxlen> res = ((sh_s.shifts[i-j].evenbit ^ p.evenbit) | (sh_s.shifts[i-j].oddbit ^ p.oddbit)) & all_masks[i] & all_masks[i+len-p.maxlen]; 
+int distance (AllShifts &s, bitread &p, int &i, int &j, int &len){
+	
+	assert (s.shifts[i-j]!=NULL);// гарантируется существование s.shifts[i-j] ??	
+	std::bitset<p.maxlen> res = ((s.shifts[i-j].evenbit ^ p.evenbit) | (s.shifts[i-j].oddbit ^ p.oddbit)) & right_masks[i] & left_masks[p.maxlen-i-len]; 
 	return res.count();
 } 
+
+struct graph_member {
+	int num_of_read;
+	int shift;
+	int dist;
+	graph_member (int t1, int  t2, int t3){
+		num_of_read = t1;
+		shift = t2;
+		dist = t3;
+	}
+};
 
 int main ()
 {
 	
 	seqan::SeqFileIn seqFileIn_reads("merged_reads.fastq");
 	
-	vector< vector < int > > graph; // 
-
+	//vector< vector < int > > graph;
+	std::vector <std::vector <graph_member> > graph; 
+	
 	vector<CharString> read_ids;
 	vector<Dna5String> reads;
 	readRecords(read_ids, reads, seqFileIn_reads);
@@ -132,7 +147,8 @@ int main ()
 	}
 	*/
 	
-	/*int num_of_reads = bits.size(); // построение графа
+
+	int num_of_reads = bits.size(); // построение графа
 	graph.resize ( num_of_reads );
 	std::cout << num_of_reads << std::endl;
 	for (size_t i = 0; i < num_of_reads; i++){
@@ -141,16 +157,19 @@ int main ()
 			for (auto k = static_cast <int> (- ( as.shifts.size() - 1 ) / 2 ); k <= static_cast <int> ( ( as.shifts.size() - 1 ) / 2 ); k++){
 				if (bits[j].dist_mask (as.shifts[k]) <= tau){
 					//in graph: 
-					graph[j].push_back(i);
-					std::cout << j << ' ' << i << ' ' << k << std::endl;
+					graph[j].push_back(graph_member ((int)i, (int)k, (int)bits[j].dist_mask (as.shifts[k])));
+					//std::cout << j << ' ' << i << ' ' << k << std::endl;
 					break;
 				}
 			}
 		}
 		as.shifts.clear();	
-	}*/	
-	
-	init_all_masks();
+	}	
 
-	std::cout << distance (bits[0], bits[1], 1, 1, 6) << ' ' << bits[0].dist_mask(bits[1]) << std::endl ;
+
+	init_all_masks();
+	AllShifts asb (bits[0]);
+	int q= 1;
+	int qq=6;
+	std::cout << distance (asb, bits[1], q, q, qq) << ' ' << bits[0].dist_mask(bits[1]) << std::endl ;
 } 
