@@ -5,22 +5,35 @@
 #include <string>
 #include <seqan/seq_io.h>
 
-
 struct bitread{
-	
+
 	static const size_t maxlen = 640;
-	static const std::bitset<maxlen> * init_masks () {
-		static std::bitset<maxlen> mask[maxlen];
-		mask[0].set();
-		for (size_t i=1; i<maxlen; i++){
-			mask[i] = mask[i-1] >> 1;
+	static const std::bitset<maxlen> * init_masks_right () {
+		static std::bitset<maxlen> right_masks [maxlen + 1];
+		right_masks [0].set();
+		for (size_t i = 1; i < maxlen; i++){
+			right_masks [i] = right_masks [i-1] >> 1;
 		}
-		return mask;
+		return right_masks;
 	}
 
-	static const std::bitset<maxlen>& mask(size_t i) {
-		static auto m = init_masks();
+	static const std::bitset<maxlen> * init_masks_left () {
+		static std::bitset<maxlen> left_masks [maxlen + 1];
+		left_masks [0].set();
+		for (size_t i = 1; i < maxlen; i++){
+                        left_masks [i] = left_masks [i-1] << 1;
+                }
+                return left_masks;
+	}
+
+	static const std::bitset<maxlen>& right_masks(size_t i) {
+		static auto m = init_masks_right();
 		return m[i];
+	}
+	
+	static const std::bitset<maxlen>& left_masks(size_t i) {
+		static auto m = init_masks_left();
+                return m[i];	
 	}
 
 	public:
@@ -29,7 +42,7 @@ struct bitread{
 	std::bitset<maxlen> oddbit;
 	
 	template<typename T>
-	bitread(const T &s) : len{seqan::length(s)} {
+	bitread( const T &s ) : len{seqan::length(s)} {
 		for (size_t i = 0; i < maxlen; i++) {
 			std::bitset<2> tmp = seqan::ordValue (s[i]);
 			evenbit[i] = tmp[0]; //TODO Rewrite??
@@ -39,9 +52,9 @@ struct bitread{
 	
 	bitread() {}
 
-	int dist_mask(const bitread &s){
+	int dist_mask( const bitread &s ){
                 size_t mlen = std::min<size_t>(s.len, len);
-                std::bitset<maxlen> res = ((s.evenbit ^ evenbit) | (s.oddbit ^ oddbit)) & bitread::mask(maxlen-mlen);
+                std::bitset<maxlen> res = ((s.evenbit ^ evenbit) | (s.oddbit ^ oddbit)) & bitread::right_masks(maxlen-mlen);
                 return res.count();
         }
 	
@@ -66,9 +79,8 @@ struct bitread{
 struct AllShifts{
 	std::unordered_map < int, bitread > shifts; 
         static const size_t min_overlap_len = 300;
-        AllShifts ( bitread b){
+        AllShifts ( bitread b ){
 		int max_shift = b.len - min_overlap_len;  
-		//std::cout << max_shift << std::endl;
 		shifts[0] = b;
                 if (max_shift > 0){
 			for (size_t i = 1; i <= max_shift; i++){
@@ -77,37 +89,23 @@ struct AllShifts{
 			} 
 		}      
         }
+	int distance ( bitread &p, int i, int j, int len ){
+        	assert ( ( shifts.find[i-j] = unsorted_map::endl ) || ( len < 0 ) );      
+        	std::bitset<p.maxlen> res = ((shifts[i-j].evenbit ^ p.evenbit) | (shifts[i-j].oddbit ^ p.oddbit)) & p.right_masks(i) & p.left_masks(p.maxlen-i-len);
+        	return res.count();
+	}
+
 };
 
 using std::vector;
 using seqan::Dna5String;
 using seqan::CharString;
 
-const int max_len_mask = 640;
-std::bitset<max_len_mask> left_masks [max_len_mask + 1];
-std::bitset<max_len_mask> right_masks [max_len_mask + 1];
-
-int init_all_masks (){
-	left_masks [0].set();
-	right_masks [0].set();
-	for (size_t j = 1; j <= max_len_mask; j++){
-		left_masks [j] = left_masks [j-1] << 1;
-		right_masks [j] = right_masks [j-1] >> 1; 
-	}
-}
-
-int distance (AllShifts &s, bitread &p, int &i, int &j, int &len){
-	
-	assert (s.shifts[i-j]!=NULL);// гарантируется существование s.shifts[i-j] ??	
-	std::bitset<p.maxlen> res = ((s.shifts[i-j].evenbit ^ p.evenbit) | (s.shifts[i-j].oddbit ^ p.oddbit)) & right_masks[i] & left_masks[p.maxlen-i-len]; 
-	return res.count();
-} 
-
-struct graph_member {
+struct GraphVertex {
 	int num_of_read;
 	int shift;
 	int dist;
-	graph_member (int t1, int  t2, int t3){
+	GraphVertex (int t1, int  t2, int t3){
 		num_of_read = t1;
 		shift = t2;
 		dist = t3;
@@ -120,13 +118,13 @@ int main ()
 	seqan::SeqFileIn seqFileIn_reads("merged_reads.fastq");
 	
 	//vector< vector < int > > graph;
-	std::vector <std::vector <graph_member> > graph; 
+	std::vector <std::vector <GraphVertex> > graph; 
 	
 	vector<CharString> read_ids;
 	vector<Dna5String> reads;
 	readRecords(read_ids, reads, seqFileIn_reads);
 	int tau = 10;
-	int tmp_len = reads.size();// !!
+	int tmp_len = reads.size();
 	for (size_t j = 0; j < 10; j++){
 		for (size_t i = 0; i < tmp_len; i++){
 			reads.push_back(reads[i]);
@@ -147,7 +145,7 @@ int main ()
 	}
 	*/
 	
-
+	/*
 	int num_of_reads = bits.size(); // построение графа
 	graph.resize ( num_of_reads );
 	std::cout << num_of_reads << std::endl;
@@ -165,11 +163,10 @@ int main ()
 		}
 		as.shifts.clear();	
 	}	
+	*/
 
-
-	init_all_masks();
 	AllShifts asb (bits[0]);
-	int q= 1;
-	int qq=6;
-	std::cout << distance (asb, bits[1], q, q, qq) << ' ' << bits[0].dist_mask(bits[1]) << std::endl ;
+	int q = 1;
+	int qq = 6;
+	std::cout << asb.distance (bits[1], q, q, qq) << ' ' << bits[0].dist_mask(bits[1]) << std::endl ;
 } 
